@@ -15,3 +15,6 @@ pytest-asyncio
 pydantic[email]
 python-dotenv
 passlib
+requests
+pillow
+python-multipart

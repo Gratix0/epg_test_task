@@ -12,3 +12,6 @@ sqlalchemy
 alembic
 pytest
 pytest-asyncio
+pydantic[email]
+python-dotenv
+passlib

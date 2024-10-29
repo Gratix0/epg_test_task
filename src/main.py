@@ -6,7 +6,6 @@ from user.router import router as users_router
 
 app = FastAPI(
     title="epg_test_task",
-    base_prefix="api/"
 )
 
 app.include_router(users_router)

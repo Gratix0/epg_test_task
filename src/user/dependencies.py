@@ -1,14 +1,15 @@
 from fastapi import Depends, HTTPException, status
+from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from epg_test_task.src.database import get_db
 from epg_test_task.src.user.models import Users
-from epg_test_task.src.user.schemas import UserCreate
+from epg_test_task.src.user.schemas import UserInApi
 
-async def check_unique_email(user: UserCreate, db: AsyncSession = Depends(get_db)):
+async def check_unique_email(email: EmailStr, db: AsyncSession = Depends(get_db)):
     # Проверка на наличие пользователя с таким же email
-    result = await db.execute(select(Users).where(Users.email == user.email))
+    result = await db.execute(select(Users).where(Users.email == email))
     existing_user = result.scalars().first()
     if existing_user:
         raise HTTPException(

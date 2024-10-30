@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
+import datetime
+
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
@@ -14,6 +16,9 @@ class Users(Base):
     first_name = Column(String, nullable=False, index=True)
     last_name = Column(String, nullable=False, index=True)
     pic_url = Column(String, nullable=True)
+    registration_date = Column(DateTime, default=datetime.datetime.utcnow)
+    longitude = Column(Float, nullable=True)
+    latitude = Column(Float, nullable=True)
 
     matches_sent = relationship("Match", foreign_keys="Match.user_id", back_populates="user")
     matches_received = relationship("Match", foreign_keys="Match.matched_user_id", back_populates="matched_user")

@@ -1,2 +1,3 @@
 src/user/avatars
 .env
+Dockerfile

@@ -14,10 +14,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from .models import Users, Match
-from .schemas import UserCreate, UserDB
-from ..config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, MY_EMAIL, EMAIL_PASS  # Configuration
-from ..database import get_db
+from epg_test_task.src.user.models import Users, Match
+from epg_test_task.src.user.schemas import UserCreate, UserDB
+from epg_test_task.src.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, MY_EMAIL, EMAIL_PASS  # Configuration
+from epg_test_task.src.database import get_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -258,7 +258,7 @@ async def get_current_user(
         access_token: str = Cookie(None),  # Extract token from cookies
         db: AsyncSession = Depends(get_db)
 ):
-    email = await check_acsess_jwt(access_token)
+    email = await check_access_jwt(access_token)
 
     user = await get_user(db=db, email=email)  # Get user by email
     if user is None:

@@ -14,3 +14,12 @@ DB_PORT_TEST = os.environ.get("DB_PORT_TEST")
 DB_NAME_TEST = os.environ.get("DB_NAME_TEST")
 DB_USER_TEST = os.environ.get("DB_USER_TEST")
 DB_PASS_TEST = os.environ.get("DB_PASS_TEST")
+
+#jwt
+SECRET_KEY = os.environ.get("SECRET_KEY")
+ALGORITHM = os.environ.get("ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES")
+
+#smtp
+MY_EMAIL = os.environ.get("MY_EMAIL")
+EMAIL_PASS = os.environ.get("EMAIL_PASS")

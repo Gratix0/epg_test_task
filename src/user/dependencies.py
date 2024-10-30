@@ -5,7 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from epg_test_task.src.database import get_db
 from epg_test_task.src.user.models import Users
-from epg_test_task.src.user.schemas import UserInApi
 
 async def check_unique_email(email: EmailStr, db: AsyncSession = Depends(get_db)):
     # Проверка на наличие пользователя с таким же email

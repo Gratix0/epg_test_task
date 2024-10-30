@@ -11,10 +11,11 @@ from epg_test_task.src.database import get_db
 from epg_test_task.src.user.dependencies import check_unique_email
 from epg_test_task.src.user.schemas import UserInApiForCreate, UserCreate, Token, UserAuth
 from epg_test_task.src.user.service import create_user, watermark_my_image, authenticate_user, \
-    create_access_token, get_password_hash, get_current_user, authenticate_Match, create_match_in_db, \
+    create_access_token, get_password_hash, get_current_user, authenticate_match, create_match_in_db, \
     check_reciprocal_match, get_by_user_filter, check_access_jwt
 
 router = APIRouter(prefix="/api/clients")
+
 
 @router.post("/create", summary="Register a new user", description="Creates a new user account with the provided data.")
 async def add_user(first_name: str,
@@ -73,6 +74,7 @@ async def add_user(first_name: str,
     new_user = await create_user(user_data, db)
     return new_user
 
+
 @router.post("/login", response_model=Token, summary="Login", description="Logs in a user and returns an access token.")
 async def login_for_access_token(user: UserAuth, response: Response, db=Depends(get_db)):
     """
@@ -107,9 +109,10 @@ async def login_for_access_token(user: UserAuth, response: Response, db=Depends(
 
     return Token(access_token=access_token, token_type="bearer")
 
+
 @router.post("/{id}/match", status_code=200)
 async def match_user(id: int, db = Depends(get_db), current_user = Depends(get_current_user)):
-        second_user = await authenticate_Match(id, db, current_user)
+        second_user = await authenticate_match(id, db, current_user)
         await create_match_in_db(id, db, current_user)
         return await check_reciprocal_match(second_user, db, current_user)
 

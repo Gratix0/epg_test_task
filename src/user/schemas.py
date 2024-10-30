@@ -6,6 +6,7 @@ from pydantic import BaseModel, EmailStr, Field
 class User(BaseModel):
     email: EmailStr
 
+
 class UserInApiForCreate(User):
     first_name: str
     last_name: str
@@ -14,17 +15,19 @@ class UserInApiForCreate(User):
     longitude: float
     latitude: float
 
+
 class UserCreate(UserInApiForCreate):
     pic_url: Optional[str] = Field(None)
+
 
 class UserDB(UserCreate):
     id: int
     class Config:
         orm_mode = True
 
+
 class UserAuth(User):
     password: str
-
 
 
 # ===========================
@@ -35,12 +38,14 @@ class Token(BaseModel):
     access_token: str  # Поле для токена доступа
     token_type: str  # Тип токена (например, Bearer)
 
+
 class TokenData(BaseModel):
-    username: Optional[str] = None  # Имя пользователя из токена (может отсутствовать)
+    username: Optional[str] = None
 
 # ===========================
 # Match point
 # ===========================
+
 
 class MatchBase(BaseModel):
     user_id: int
@@ -49,8 +54,10 @@ class MatchBase(BaseModel):
     user: User
     matched_user: User
 
+
 class MatchCreate(MatchBase):
     pass
+
 
 class Match(MatchBase):
     id: int

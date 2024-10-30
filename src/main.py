@@ -1,7 +1,7 @@
-from sys import base_prefix
-
 import uvicorn
+
 from fastapi import FastAPI
+
 from user.router import router as users_router
 
 app = FastAPI(

@@ -5,7 +5,7 @@ from email.mime.text import MIMEText
 from typing import Optional
 
 from PIL import Image
-from fastapi import HTTPException, status, UploadFile, File, Cookie, Depends, Query
+from fastapi import Cookie, Depends, HTTPException, status, UploadFile, File,  Query
 from geopy.distance import geodesic
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -16,7 +16,7 @@ from sqlalchemy.future import select
 
 from epg_test_task.src.user.models import Users, Match
 from epg_test_task.src.user.schemas import UserCreate, UserDB
-from epg_test_task.src.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, MY_EMAIL, EMAIL_PASS  # Configuration
+from epg_test_task.src.config import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES, MY_EMAIL, EMAIL_PASS
 from epg_test_task.src.database import get_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -25,7 +25,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 # User Operations
 # ===========================
 
-async def create_user(user: UserCreate, db: AsyncSession):
+
+async def create_user(user: UserCreate, db: AsyncSession) -> dict:
     new_user = Users(**user.dict())
     # new_user.password = get_password_hash(new_user.password)
     try:
@@ -45,12 +46,15 @@ async def create_user(user: UserCreate, db: AsyncSession):
 async def verify_password(plain_password, hashed_password):
     return pwd_context.verify(plain_password, hashed_password)
 
+
 def get_password_hash(password):
     return pwd_context.hash(password)
+
 
 async def get_user(db: AsyncSession, email: str):
     result = await db.execute(select(Users).where(Users.email == email))
     return result.scalars().first()
+
 
 async def authenticate_user(db: AsyncSession, email: str, password: str):
     user = await get_user(db, email)
@@ -62,7 +66,8 @@ async def authenticate_user(db: AsyncSession, email: str, password: str):
 
 watermark = Image.open("user/watermark/b7655b5c-a529-41ab-91c4-0c86c6797ff3.png").convert("RGBA")
 
-async def watermark_my_image(email: str, background_image: UploadFile = File(...)) -> None:
+
+async def watermark_my_image(email: str, background_image: UploadFile = File(...)):
     try:
         bg_image = Image.open(background_image.file).convert("RGBA")
 
@@ -82,10 +87,12 @@ async def watermark_my_image(email: str, background_image: UploadFile = File(...
                             detail="Uncorrected file. Please try with image. Error message: " + str(e))
     return output_path
 
-async def allowed_file(filename):
+
+async def allowed_file(filename: str) -> bool:
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 async def get_by_user_filter(db: AsyncSession,
                              first_name: Optional[str] = Query(None, description="Filter by first name"),
@@ -136,7 +143,8 @@ async def get_by_user_filter(db: AsyncSession,
 # User Operations with Match
 # ===========================
 
-async def authenticate_Match(id: int, db: AsyncSession, current_user: UserDB):
+
+async def authenticate_match(id: int, db: AsyncSession, current_user: UserDB):
     # Проверка, существует ли пользователь с id в бд
     matched_user = await db.execute(select(Users).where(Users.id == id))
     matched_user = matched_user.scalars().first()
@@ -155,12 +163,14 @@ async def authenticate_Match(id: int, db: AsyncSession, current_user: UserDB):
 
     return matched_user
 
+
 async def create_match_in_db(id: str, db: AsyncSession, current_user: UserDB):
     # Create Match
     new_match = Match(user_id=current_user.id, matched_user_id=int(id), is_match=True)
     db.add(new_match)
     await db.commit()
     await db.refresh(new_match)
+
 
 async def update_matches_on_true(db: AsyncSession, user_id1: int, user_id2: int):
     """Updates is_match for two reciprocal matches using ORM (still less efficient than raw SQL)."""
@@ -179,6 +189,7 @@ async def update_matches_on_true(db: AsyncSession, user_id1: int, user_id2: int)
     except Exception as e:
         await db.rollback()
         print(f"Error updating matches on True: {e}")
+
 
 async def send_email(first_user: UserDB, second_user: UserDB):
     """Асинхронно отправляет email."""
@@ -242,6 +253,7 @@ credentials_exception = HTTPException(
     headers={"WWW-Authenticate": "Bearer"},
 )
 
+
 # Create access token
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()  # Copy data for token
@@ -252,6 +264,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode.update({"exp": expire})  # Update data with expiration time
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
 
 # Get current user
 async def get_current_user(
@@ -265,6 +278,7 @@ async def get_current_user(
         raise credentials_exception  # If user not found
 
     return user  # Return current user
+
 
 async def check_access_jwt(access_token: str = Cookie(None)):
     if access_token is None:

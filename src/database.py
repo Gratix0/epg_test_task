@@ -14,8 +14,9 @@ metadata = MetaData()
 engine = create_async_engine(DATABASE_URL, poolclass=NullPool)
 SessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
+
 # Функция для получения сессии
-def get_db():
+def get_db() -> None:
     db = SessionLocal()
     try:
         yield db

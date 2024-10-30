@@ -2,12 +2,14 @@ import os
 import smtplib
 from datetime import datetime, timedelta, timezone
 from email.mime.text import MIMEText
+from typing import Optional
 
 from PIL import Image
-from fastapi import HTTPException, status, UploadFile, File, Cookie, Depends
+from fastapi import HTTPException, status, UploadFile, File, Cookie, Depends, Query
+from geopy.distance import geodesic
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from sqlalchemy import and_, update
+from sqlalchemy import and_, update, desc
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
@@ -85,10 +87,55 @@ async def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+async def get_by_user_filter(db: AsyncSession,
+                             first_name: Optional[str] = Query(None, description="Filter by first name"),
+                             last_name: Optional[str] = Query(None, description="Filter by last name"),
+                             gender: Optional[str] = Query(None, description="Filter by gender"),
+                             sort_by: Optional[str] = Query(None, description="Sort by registration date (asc or desc)"),
+                             radius: Optional[float] = Query(None, description="Radius in kilometers"),
+                             user_longitude: Optional[float] = None,
+                             user_latitude: Optional[float] = None):
+
+    query = select(Users)
+
+    if first_name:
+        query = query.where(Users.first_name.ilike(f"%{first_name}%"))
+    if last_name:
+        query = query.where(Users.last_name.ilike(f"%{last_name}%"))
+    if gender:
+        query = query.where(Users.gender == gender)
+
+    if sort_by:
+        if sort_by.lower() == "asc":
+            query = query.order_by(Users.registration_date)
+        elif sort_by.lower() == "desc":
+            query = query.order_by(desc(Users.registration_date))
+        else:
+            raise HTTPException(status_code=400, detail="Invalid sort_by value. Use 'asc' or 'desc'.")
+
+    if radius is not None and user_longitude is not None and user_latitude is not None:
+        users = []
+        result = await db.execute(query)
+        all_users = result.scalars().all()
+        user_coords = (user_latitude, user_longitude)
+        for user in all_users:
+            if user.latitude is not None and user.longitude is not None:
+                user_coords2 = (user.latitude, user.longitude)
+                distance = geodesic(user_coords, user_coords2).km
+                if distance <= radius:
+                    users.append(user)
+        await db.close()
+        return users
+    else:
+        result = await db.execute(query)
+        await db.close()
+        return result.scalars().all()
+
 
 # ===========================
 # User Operations with Match
 # ===========================
+
 async def authenticate_Match(id: int, db: AsyncSession, current_user: UserDB):
     # Проверка, существует ли пользователь с id в бд
     matched_user = await db.execute(select(Users).where(Users.id == id))
@@ -189,6 +236,12 @@ async def check_reciprocal_match(matched_user: UserDB, db: AsyncSession, current
 # Tokenization
 # ===========================
 
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Could not verify credentials",
+    headers={"WWW-Authenticate": "Bearer"},
+)
+
 # Create access token
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode = data.copy()  # Copy data for token
@@ -205,12 +258,15 @@ async def get_current_user(
         access_token: str = Cookie(None),  # Extract token from cookies
         db: AsyncSession = Depends(get_db)
 ):
+    email = await check_acsess_jwt(access_token)
 
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not verify credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    user = await get_user(db=db, email=email)  # Get user by email
+    if user is None:
+        raise credentials_exception  # If user not found
+
+    return user  # Return current user
+
+async def check_access_jwt(access_token: str = Cookie(None)):
     if access_token is None:
         raise credentials_exception
     try:
@@ -218,12 +274,6 @@ async def get_current_user(
         email: str = payload.get("sub")  # Get email from payload
         if email is None:
             raise credentials_exception
-        # token_data = TokenData(email=email)  # Create TokenData object
+        return email
     except JWTError:
         raise credentials_exception
-
-    user = await get_user(db=db, email=email)  # Get user by email
-    if user is None:
-        raise credentials_exception  # If user not found
-
-    return user  # Return current user

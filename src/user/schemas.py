@@ -11,12 +11,16 @@ class UserInApiForCreate(User):
     last_name: str
     password: str
     gender: str
+    longitude: float
+    latitude: float
 
 class UserCreate(UserInApiForCreate):
     pic_url: Optional[str] = Field(None)
 
 class UserDB(UserCreate):
     id: int
+    class Config:
+        orm_mode = True
 
 class UserAuth(User):
     password: str

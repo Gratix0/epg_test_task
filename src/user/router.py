@@ -1,21 +1,18 @@
 from datetime import timedelta
-from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, UploadFile, HTTPException, File, Response
+from fastapi import APIRouter, Depends, UploadFile, HTTPException, File, Response, Query
 from pydantic import EmailStr
-from sqlalchemy import Boolean
 from sqlalchemy.orm import Session
 from starlette import status
-from starlette.responses import JSONResponse
 
 from epg_test_task.src.config import ACCESS_TOKEN_EXPIRE_MINUTES
 from epg_test_task.src.database import get_db
 from epg_test_task.src.user.dependencies import check_unique_email
-from epg_test_task.src.user.schemas import UserInApiForCreate, UserCreate, Token, UserAuth, Match, MatchCreate, UserDB
-from epg_test_task.src.user.service import create_user, allowed_file, watermark_my_image, authenticate_user, \
+from epg_test_task.src.user.schemas import UserInApiForCreate, UserCreate, Token, UserAuth
+from epg_test_task.src.user.service import create_user, watermark_my_image, authenticate_user, \
     create_access_token, get_password_hash, get_current_user, authenticate_Match, create_match_in_db, \
-    check_reciprocal_match
+    check_reciprocal_match, get_by_user_filter, check_access_jwt
 
 router = APIRouter(prefix="/api/clients")
 
@@ -25,6 +22,8 @@ async def add_user(first_name: str,
                    email: EmailStr,
                    password: str,
                    gender: str,
+                   longitude: float,
+                   latitude: float,
                    # Аватар может быть типа str потому-что при передаче необязательным параметром (отправка пустого файла)
                    # В curl передаётся пустая строчка вместо файла и оне не проходит pydantic валидацию.
                    avatar: Optional[UploadFile] | str = File(None),
@@ -50,7 +49,9 @@ async def add_user(first_name: str,
         last_name=last_name,
         email=email,
         password=password,
-        gender=gender
+        gender=gender,
+        longitude = longitude,
+        latitude = latitude,
     )
 
     local_avatar_path = "/path/to/default/avatar"
@@ -64,7 +65,9 @@ async def add_user(first_name: str,
         email=email,
         password=pass_for_db,
         gender=gender,
-        pic_url=local_avatar_path
+        pic_url=local_avatar_path,
+        longitude = longitude,
+        latitude = latitude,
     )
 
     new_user = await create_user(user_data, db)
@@ -109,3 +112,21 @@ async def match_user(id: int, db = Depends(get_db), current_user = Depends(get_c
         second_user = await authenticate_Match(id, db, current_user)
         await create_match_in_db(id, db, current_user)
         return await check_reciprocal_match(second_user, db, current_user)
+
+
+@router.get("/list")  # Assuming you have UserDB schema
+async def get_users(
+        db = Depends(get_db),
+        first_name: Optional[str] = Query(None, description="Filter by first name"),
+        last_name: Optional[str] = Query(None, description="Filter by last name"),
+        gender: Optional[str] = Query(None, description="Filter by gender"),
+        sort_by: Optional[str] = Query(None, description="Sort by registration date (asc or desc)"),
+        radius: Optional[float] = Query(None, description="Radius in kilometers"),
+        user_longitude: Optional[float] = None,
+        user_latitude: Optional[float] = None,
+        _ = Depends(check_access_jwt)
+):
+    """
+    Retrieves a list of users with optional filtering and sorting.
+    """
+    return await get_by_user_filter(db, first_name, last_name, gender, sort_by, radius, user_longitude, user_latitude)

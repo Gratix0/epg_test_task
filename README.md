@@ -1,3 +1,5 @@
+## OpenAPI: http://gratix.atomicscience.ru:8009/docs#/
+
 # Тестовое задание для Python разработчика (FastAPI)
 
 ## Введение

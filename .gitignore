@@ -1,3 +1,5 @@
 epg_test_task/src/user/avatars
 .env
 .venv
+.idea
+epg_test_task/__pycache__

@@ -16,9 +16,9 @@ SessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
 # Функция для получения сессии
-def get_db() -> None:
+async def get_db() -> None:
     db = SessionLocal()
     try:
         yield db
     finally:
-        db.close()
+        await db.close()

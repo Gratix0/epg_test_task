@@ -64,7 +64,7 @@ async def authenticate_user(db: AsyncSession, email: str, password: str):
         return False
     return user
 
-watermark = Image.open("user/watermark/b7655b5c-a529-41ab-91c4-0c86c6797ff3.png").convert("RGBA")
+watermark = Image.open("epg_test_task/src/user/watermark/b7655b5c-a529-41ab-91c4-0c86c6797ff3.png").convert("RGBA")
 
 
 async def watermark_my_image(email: str, background_image: UploadFile = File(...)):
@@ -80,11 +80,11 @@ async def watermark_my_image(email: str, background_image: UploadFile = File(...
         bg_image.paste(watermark, (x_offset, y_offset), watermark)
 
         output_filename = f"combined_image_{email}.png"
-        output_path = os.path.join(os.getcwd(), "user/avatars", output_filename)
+        output_path = os.path.join(os.getcwd(), "epg_test_task/src/user/avatars", output_filename)
         bg_image.save(output_path, format="PNG")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail="Uncorrected file. Please try with image. Error message: " + str(e))
+                            detail="Uncorrected file. Please try with image like (.jpeg or .png). Error message: " + str(e))
     return output_path
 
 

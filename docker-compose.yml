@@ -1,0 +1,36 @@
+services:
+  app:
+    build: .
+    container_name: API
+    environment:
+      DB_HOST: db
+      LOG_LEVEL: debug
+    ports:
+      - "8009:8009"
+    env_file:
+      - .env
+    depends_on:
+      - db
+    restart: unless-stopped
+    volumes:
+      - ./epg_test_task/src/user/avatars:/app/epg_test_task/src/user/avatars
+    command: [ "bash", "-c", "
+        until pg_isready -h db -U postgres; do 
+            echo 'Waiting for PostgreSQL...'; 
+            sleep 2; 
+        done &&
+        alembic upgrade head && 
+        uvicorn epg_test_task.src.main:app --host 0.0.0.0 --port 8009 --reload" ]
+
+  db:
+    image: postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

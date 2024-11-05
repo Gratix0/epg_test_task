@@ -1,10 +1,10 @@
 import datetime
 
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime, Float
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 
-Base = declarative_base()
+from epg_test_task.src.database import Base
+
 
 class Users(Base):
     __tablename__ = 'users'

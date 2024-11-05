@@ -2,7 +2,7 @@ import uvicorn
 
 from fastapi import FastAPI
 
-from user.router import router as users_router
+from epg_test_task.src.user.router import router as users_router
 
 app = FastAPI(
     title="epg_test_task",
